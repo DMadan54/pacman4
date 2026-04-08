@@ -36,6 +36,7 @@ const ghostScore = 200;
 const cherryScore = 100;
 
 let path = [];
+let cherryEls = [];
 let pCnt = 0;
 let totalP = 0;
 let targetPos;
@@ -193,6 +194,7 @@ AFRAME.registerComponent('maze', {
       sphere.setAttribute('radius', '0.2');
       sphere.setAttribute('position', `${cx} ${y} ${cz}`);
       sceneEl.appendChild(sphere);
+      cherryEls.push(sphere);
     }
   },
   initStartButton: function () {
@@ -209,7 +211,7 @@ AFRAME.registerComponent('maze', {
     document.querySelectorAll('[pellet]')
       .forEach(p => p.setAttribute('visible', true));
     pCnt = totalP;
-    document.querySelectorAll('[cherry]').forEach(c => c.setAttribute('visible', true));
+    cherryEls.forEach(c => c.setAttribute('visible', true));
 
     document.getElementById("logo").style.display = 'none';
     document.getElementById("start").style.display = 'none';
@@ -395,15 +397,16 @@ AFRAME.registerComponent('player', {
     }
   },
   onCollideWithCherry: function (x, z) {
-    document.querySelectorAll('[cherry]').forEach(cherry => {
-      if (!cherry.getAttribute('visible')) return;
+    for (let i = 0; i < cherryEls.length; i++) {
+      let cherry = cherryEls[i];
+      if (!cherry.object3D.visible) continue;
       let pos = cherry.getAttribute('position');
       if (Math.abs(pos.x - x) < 0.5 && Math.abs(pos.z - z) < 0.5) {
         cherry.setAttribute('visible', false);
         score += cherryScore;
         eating.play();
       }
-    });
+    }
   },
   onEatPill: function () {
     pillCnt = pillDuration;
