@@ -56,7 +56,6 @@
       <a-asset-item id="navmesh" src="assets/models/navmesh.gltf"></a-asset-item>
       <a-asset-item id="ghost" src="assets/models/ghost.gltf"></a-asset-item>
       <a-asset-item id="maze" src="assets/models/maze.gltf"></a-asset-item>
-      <img id="life" src="assets/images/pacman.png">
     </a-assets>
   
     <!-- Player -->
@@ -66,30 +65,27 @@
               trackpad-controls="enabled: false"
               touch-controls="enabled: false"
               position="0 0 4"
-              nav-agent="speed: 0.7; lookAtTarget: false"
+              nav-agent="speed: 0.7"
               player>
       <a-camera position="0 1 0"
                 wasd-controls="enabled: false"
                 look-controls="enabled: false">
         <a-entity> 
-          <a-image position="-0.3 0.225 -0.3" 
-                   width="0.015"
-                   height="0.015"
-                   src="#life"
-                   life>
-          </a-image> 
-          <a-image position="-0.28 0.225 -0.3" 
-                   width="0.015"
-                   height="0.015"
-                   src="#life"
-                   life>
-          </a-image> 
-          <a-image position="-0.26 0.225 -0.3" 
-                   width="0.015"
-                   height="0.015"
-                   src="#life"
-                   life>
-          </a-image>
+          <a-circle position="-0.3 0.225 -0.3"
+                    radius="0.0075"
+                    material="shader: flat; color: yellow"
+                    life>
+          </a-circle>
+          <a-circle position="-0.28 0.225 -0.3"
+                    radius="0.0075"
+                    material="shader: flat; color: yellow"
+                    life>
+          </a-circle>
+          <a-circle position="-0.26 0.225 -0.3"
+                    radius="0.0075"
+                    material="shader: flat; color: yellow"
+                    life>
+          </a-circle>
           <a-entity position="-0.15 0.225 -0.3" 
                     text="color: white; align: center; value: CURRENTSCORE; width: 0.4">
           </a-entity>
