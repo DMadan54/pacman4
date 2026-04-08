@@ -237,8 +237,6 @@ AFRAME.registerComponent('player', {
     this.hitGhosts = [];
     this.ghosts = document.querySelectorAll('[ghost]');
     this.player = document.querySelector('[player]');
-    this.camera = document.querySelector('a-camera');
-    this.scoreEl = document.querySelector('#score');
     this.currentBg = siren;
     this.nextBg = siren;
   },
@@ -258,7 +256,7 @@ AFRAME.registerComponent('player', {
       this.updateMode(position);
       
       // Update score
-      this.scoreEl.setAttribute('text', {
+      document.querySelector('#score').setAttribute('text', {
         value: score
       });
 
@@ -271,7 +269,8 @@ AFRAME.registerComponent('player', {
     }
   },
   updatePlayerDest: function (x, y, z) {
-    let angle = this.camera.getAttribute("rotation");
+    let camera = document.querySelector("a-camera");
+    let angle = camera.getAttribute("rotation");
 
     let _z = step * Math.cos(angle.y * Math.PI / 180);
     let _x = step * Math.sin(angle.y * Math.PI / 180);
