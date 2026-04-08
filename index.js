@@ -174,21 +174,12 @@ AFRAME.registerComponent('maze', {
   },
   initCherries: function () {
     let sceneEl = this.el.sceneEl;
-    let roadPositions = [];
-    for (let i = 0; i < maze.length; i++) {
-      if (maze[i] === P.PELLET) {
-        let x = startX + (i % col) * step;
-        let z = startZ + Math.floor(i / col) * step;
-        roadPositions.push([x, z]);
-      }
-    }
-    // Shuffle
-    for (let i = roadPositions.length - 1; i > 0; i--) {
-      let j = Math.floor(Math.random() * (i + 1));
-      [roadPositions[i], roadPositions[j]] = [roadPositions[j], roadPositions[i]];
-    }
-    for (let i = 0; i < 3; i++) {
-      let [cx, cz] = roadPositions[i];
+    const positions = [
+      {x: startX + 14 * step, z: startZ + 22 * step}, // near player start
+      {x: startX + 20 * step, z: startZ +  3 * step}, // top-right
+      {x: startX +  0 * step, z: startZ + 19 * step}, // left-middle
+    ];
+    positions.forEach(({x: cx, z: cz}) => {
       let sphere = document.createElement('a-sphere');
       sphere.setAttribute('cherry', '');
       sphere.setAttribute('color', 'red');
@@ -197,7 +188,7 @@ AFRAME.registerComponent('maze', {
       sceneEl.appendChild(sphere);
       cherryEls.push(sphere);
       cherryPositions.push({x: cx, z: cz});
-    }
+    });
   },
   initStartButton: function () {
     let button = document.getElementById("start");
@@ -285,7 +276,7 @@ AFRAME.registerComponent('player', {
       this.el.object3D.position.set(path[13][1][0], y, path[13][1][2]);
     else {
       let newPos = path[i][j];
-      if (newPos && newPos[4] > P.ROAD)
+      if (newPos && newPos.length > 0)
         updateAgentDest(this.player, new THREE.Vector3(newPos[0], 0, newPos[2]));
     }
   },
