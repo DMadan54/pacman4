@@ -37,6 +37,7 @@ const cherryScore = 100;
 
 let path = [];
 let cherryEls = [];
+let cherryPositions = [];
 let pCnt = 0;
 let totalP = 0;
 let targetPos;
@@ -195,6 +196,7 @@ AFRAME.registerComponent('maze', {
       sphere.setAttribute('position', `${cx} ${y} ${cz}`);
       sceneEl.appendChild(sphere);
       cherryEls.push(sphere);
+      cherryPositions.push({x: cx, z: cz});
     }
   },
   initStartButton: function () {
@@ -235,6 +237,8 @@ AFRAME.registerComponent('player', {
     this.hitGhosts = [];
     this.ghosts = document.querySelectorAll('[ghost]');
     this.player = document.querySelector('[player]');
+    this.camera = document.querySelector('a-camera');
+    this.scoreEl = document.querySelector('#score');
     this.currentBg = siren;
     this.nextBg = siren;
   },
@@ -254,7 +258,7 @@ AFRAME.registerComponent('player', {
       this.updateMode(position);
       
       // Update score
-      document.querySelector('#score').setAttribute('text', {
+      this.scoreEl.setAttribute('text', {
         value: score
       });
 
@@ -267,8 +271,7 @@ AFRAME.registerComponent('player', {
     }
   },
   updatePlayerDest: function (x, y, z) {
-    let camera = document.querySelector("a-camera");
-    let angle = camera.getAttribute("rotation");
+    let angle = this.camera.getAttribute("rotation");
 
     let _z = step * Math.cos(angle.y * Math.PI / 180);
     let _x = step * Math.sin(angle.y * Math.PI / 180);
@@ -398,11 +401,10 @@ AFRAME.registerComponent('player', {
   },
   onCollideWithCherry: function (x, z) {
     for (let i = 0; i < cherryEls.length; i++) {
-      let cherry = cherryEls[i];
-      if (!cherry.object3D.visible) continue;
-      let pos = cherry.getAttribute('position');
+      if (!cherryEls[i].object3D.visible) continue;
+      let pos = cherryPositions[i];
       if (Math.abs(pos.x - x) < 0.5 && Math.abs(pos.z - z) < 0.5) {
-        cherry.setAttribute('visible', false);
+        cherryEls[i].setAttribute('visible', false);
         score += cherryScore;
         eating.play();
       }
