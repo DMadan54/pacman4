@@ -285,7 +285,7 @@ AFRAME.registerComponent('player', {
       this.el.object3D.position.set(path[13][1][0], y, path[13][1][2]);
     else {
       let newPos = path[i][j];
-      if (newPos && newPos.length > 0)
+      if (newPos && newPos[4] > P.ROAD)
         updateAgentDest(this.player, new THREE.Vector3(newPos[0], 0, newPos[2]));
     }
   },
