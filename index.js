@@ -176,7 +176,7 @@ AFRAME.registerComponent('maze', {
     let sceneEl = this.el.sceneEl;
     let roadPositions = [];
     for (let i = 0; i < maze.length; i++) {
-      if (maze[i] === P.ROAD) {
+      if (maze[i] === P.PELLET) {
         let x = startX + (i % col) * step;
         let z = startZ + Math.floor(i / col) * step;
         roadPositions.push([x, z]);
