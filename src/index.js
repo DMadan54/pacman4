@@ -26,6 +26,10 @@ const P = {
 };
 const pColor = '#FFB897';
 const gColor = 0x2121DE;
+const playerSpeed = 0.7;
+const playerBoostSpeed = 1.5;
+const eventInterval = 240; // ticks between events (~1 min at 250ms/tick)
+const eventLength = 120;   // ticks per event (~30 sec)
 const gNormSpeed = 0.65;
 const gSlowSpeed = 0.2;
 const gFastSpeed = 1.5;
@@ -319,6 +323,8 @@ AFRAME.registerComponent('player', {
   init: function () {
     this.tick = AFRAME.utils.throttleTick(this.tick, 250, this);
     this.waveCnt = 0;
+    this.eventTimer = eventInterval;
+    this.eventDuration = 0;
     this.hitGhosts = [];
     this.ghosts = document.querySelectorAll('[ghost]');
     this.player = document.querySelector('[player]');
@@ -342,6 +348,7 @@ AFRAME.registerComponent('player', {
       this.onCollideWithFruit(x, z);
       this.updateGhosts(x, z);
       this.updateMode(position);
+      this.updateEvent();
       
       // Update score
       document.querySelector('#score').setAttribute('text', {
@@ -570,11 +577,36 @@ AFRAME.registerComponent('player', {
         this.onGameOver(false);
     }, 1000);
   },
+  updateEvent: function () {
+    if (this.eventDuration > 0) {
+      this.eventDuration--;
+      if (this.eventDuration === 0) this.onEventEnd();
+    } else {
+      this.eventTimer--;
+      if (this.eventTimer <= 0) {
+        this.eventTimer = eventInterval;
+        this.eventDuration = eventLength;
+        this.onEventStart();
+      }
+    }
+  },
+  onEventStart: function () {
+    this.player.setAttribute('nav-agent', {speed: playerBoostSpeed});
+    document.getElementById('event-banner').style.display = 'block';
+  },
+  onEventEnd: function () {
+    this.player.setAttribute('nav-agent', {speed: playerSpeed});
+    document.getElementById('event-banner').style.display = 'none';
+  },
   stop: function () {
     disableCamera();
     dead = true;
     pillCnt = 0;
     this.waveCnt = 0;
+    this.eventTimer = eventInterval;
+    this.eventDuration = 0;
+    document.getElementById('event-banner').style.display = 'none';
+    this.player.setAttribute('nav-agent', {speed: playerSpeed});
 
     // Update score
     if (score > highScore) {

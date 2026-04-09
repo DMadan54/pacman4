@@ -89,6 +89,19 @@ body {
   display: none;
 }
 
+#event-banner {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 1.5em;
+  color: cyan;
+  font-family: 'PressStart2P';
+  text-shadow: 2px 2px black;
+  display: none;
+  white-space: nowrap;
+}
+
 .blink {
   animation-name: changeColor;
   animation-duration: 1s;
