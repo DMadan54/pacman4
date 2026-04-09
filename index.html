@@ -92,10 +92,10 @@
                    life>
           </a-image>
           <a-entity position="-0.15 0.225 -0.3" 
-                    text="color: white; align: center; value: CURRENTSCORE; width: 0.4">
+                    text="color: white; align: center; value: CURRENT SCORE; width: 0.4">
           </a-entity>
           <a-entity position="0 0.225 -0.3" 
-                    text="color: white; align: center; value: HIGHSCORE; width: 0.4">
+                    text="color: white; align: center; value: HIGH SCORE; width: 0.4">
           </a-entity>
           <a-entity id="score"
                     position="-0.15 0.20 -0.3" 
@@ -145,6 +145,13 @@
                   ghost="0xFFB847">
     </a-gltf-model>
 
+    <!-- TEST: pumpkin placed near player start to verify model renders -->
+    <a-entity gltf-model="#pumpkin"
+              position="-0.735 0 4.03"
+              scale="0.08 0.08 0.08"
+              id="test-pumpkin">
+    </a-entity>
+
     <!-- Scene -->
     <a-gltf-model scale="1 1.6 1"
                   gltf-model="#maze"
@@ -161,5 +168,6 @@
 
     <a-sky id="sky" color="blue"></a-sky>
   </a-scene>
+
 </body>
 </html>
