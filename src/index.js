@@ -28,8 +28,10 @@ const pColor = '#FFB897';
 const gColor = 0x2121DE;
 const playerSpeed = 0.7;
 const playerBoostSpeed = 1.5;
+const gFrenzySpeed = 1.8;
 const eventInterval = 240; // ticks between events (~1 min at 250ms/tick)
 const eventLength = 120;   // ticks per event (~30 sec)
+const events = ['speedBoost', 'ghostFrenzy'];
 const gNormSpeed = 0.65;
 const gSlowSpeed = 0.2;
 const gFastSpeed = 1.5;
@@ -325,6 +327,7 @@ AFRAME.registerComponent('player', {
     this.waveCnt = 0;
     this.eventTimer = eventInterval;
     this.eventDuration = 0;
+    this.currentEvent = null;
     this.hitGhosts = [];
     this.ghosts = document.querySelectorAll('[ghost]');
     this.player = document.querySelector('[player]');
@@ -597,12 +600,29 @@ AFRAME.registerComponent('player', {
     }
   },
   onEventStart: function () {
-    this.player.setAttribute('nav-agent', {speed: playerBoostSpeed});
-    document.getElementById('event-banner').style.display = 'block';
-    setTimeout(() => document.getElementById('event-banner').style.display = 'none', 2000);
+    this.currentEvent = events[Math.floor(Math.random() * events.length)];
+    const banner = document.getElementById('event-banner');
+
+    if (this.currentEvent === 'speedBoost') {
+      this.player.setAttribute('nav-agent', {speed: playerBoostSpeed});
+      banner.innerHTML = 'SPEED BOOST!';
+      banner.style.color = 'cyan';
+    } else if (this.currentEvent === 'ghostFrenzy') {
+      this.ghosts.forEach(g => g.setAttribute('nav-agent', {speed: gFrenzySpeed}));
+      banner.innerHTML = 'GHOST FRENZY!';
+      banner.style.color = 'red';
+    }
+
+    banner.style.display = 'block';
+    setTimeout(() => banner.style.display = 'none', 2000);
   },
   onEventEnd: function () {
-    this.player.setAttribute('nav-agent', {speed: playerSpeed});
+    if (this.currentEvent === 'speedBoost') {
+      this.player.setAttribute('nav-agent', {speed: playerSpeed});
+    } else if (this.currentEvent === 'ghostFrenzy') {
+      this.ghosts.forEach(g => g.setAttribute('nav-agent', {speed: gNormSpeed}));
+    }
+    this.currentEvent = null;
     document.getElementById('event-banner').style.display = 'none';
   },
   stop: function () {
@@ -612,9 +632,11 @@ AFRAME.registerComponent('player', {
     this.waveCnt = 0;
     this.eventTimer = eventInterval;
     this.eventDuration = 0;
+    this.currentEvent = null;
     document.getElementById('event-banner').style.display = 'none';
     document.getElementById('event-countdown').style.display = 'none';
     this.player.setAttribute('nav-agent', {speed: playerSpeed});
+    this.ghosts.forEach(g => g.setAttribute('nav-agent', {speed: gNormSpeed}));
 
     // Update score
     if (score > highScore) {
