@@ -580,6 +580,8 @@ AFRAME.registerComponent('player', {
   updateEvent: function () {
     if (this.eventDuration > 0) {
       this.eventDuration--;
+      const secs = Math.ceil(this.eventDuration / 4);
+      document.getElementById('event-countdown').innerHTML = 'BOOST: ' + secs + 's';
       if (this.eventDuration === 0) this.onEventEnd();
     } else {
       this.eventTimer--;
@@ -593,10 +595,13 @@ AFRAME.registerComponent('player', {
   onEventStart: function () {
     this.player.setAttribute('nav-agent', {speed: playerBoostSpeed});
     document.getElementById('event-banner').style.display = 'block';
+    document.getElementById('event-countdown').style.display = 'block';
+    setTimeout(() => document.getElementById('event-banner').style.display = 'none', 2000);
   },
   onEventEnd: function () {
     this.player.setAttribute('nav-agent', {speed: playerSpeed});
     document.getElementById('event-banner').style.display = 'none';
+    document.getElementById('event-countdown').style.display = 'none';
   },
   stop: function () {
     disableCamera();
@@ -606,6 +611,7 @@ AFRAME.registerComponent('player', {
     this.eventTimer = eventInterval;
     this.eventDuration = 0;
     document.getElementById('event-banner').style.display = 'none';
+    document.getElementById('event-countdown').style.display = 'none';
     this.player.setAttribute('nav-agent', {speed: playerSpeed});
 
     // Update score

@@ -91,15 +91,26 @@ body {
 
 #event-banner {
   position: fixed;
-  top: 20px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  font-size: 1.5em;
+  transform: translate(-50%, -50%);
+  font-size: 3em;
+  color: cyan;
+  font-family: 'PressStart2P';
+  text-shadow: 3px 3px black;
+  display: none;
+  white-space: nowrap;
+}
+
+#event-countdown {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  font-size: 1.2em;
   color: cyan;
   font-family: 'PressStart2P';
   text-shadow: 2px 2px black;
   display: none;
-  white-space: nowrap;
 }
 
 .blink {
