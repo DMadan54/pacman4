@@ -590,7 +590,7 @@ AFRAME.registerComponent('player', {
     } else {
       this.eventTimer--;
       const secsToNext = Math.ceil(this.eventTimer / 4);
-      countdown.innerHTML = 'BOOST IN: ' + secsToNext + 's';
+      countdown.innerHTML = 'SURPRISE IN: ' + secsToNext + 's';
       countdown.style.display = 'block';
       if (this.eventTimer <= 0) {
         this.eventTimer = eventInterval;
