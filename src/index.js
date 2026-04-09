@@ -360,6 +360,8 @@ AFRAME.registerComponent('player', {
     let camera = document.querySelector("a-camera");
     const dir = new THREE.Vector3();
     camera.object3D.getWorldDirection(dir);
+    dir.y = 0;
+    dir.normalize();
 
     let _z = -step * dir.z;
     let _x = -step * dir.x;
