@@ -29,9 +29,9 @@ const gColor = 0x2121DE;
 const playerSpeed = 0.7;
 const playerBoostSpeed = 1.5;
 const gFrenzySpeed = 1.8;
-const eventInterval = 8; // TESTING - set back to 240
-const events = ['reverse']; // TESTING - set back to ['speedBoost', 'ghostFrenzy', 'reverse']
-const eventDurations = {speedBoost: 120, ghostFrenzy: 120, reverse: 60};
+const eventInterval = 240; // ticks between events (~1 min at 250ms/tick)
+const events = ['speedBoost', 'ghostFrenzy'];
+const eventDurations = {speedBoost: 120, ghostFrenzy: 120};
 const gNormSpeed = 0.65;
 const gSlowSpeed = 0.2;
 const gFastSpeed = 1.5;
@@ -371,9 +371,8 @@ AFRAME.registerComponent('player', {
     const lookControls = camera.components['look-controls'];
     const yaw = lookControls && lookControls.yawObject ? lookControls.yawObject.rotation.y : 0;
 
-    const reversed = this.currentEvent === 'reverse';
-    let _z = step * Math.cos(reversed ? -yaw : yaw);
-    let _x = step * Math.sin(reversed ? -yaw : yaw);
+    let _z = step * Math.cos(yaw);
+    let _x = step * Math.sin(yaw);
     let z_ = Math.round((z - _z - startZ)/step);
     let x_ = Math.round((x - _x - startX)/step);
     let i = z_ > row - 1 ? row - 1: z_ < 0 ? 0 : z_;
@@ -612,9 +611,6 @@ AFRAME.registerComponent('player', {
       this.ghosts.forEach(g => g.setAttribute('nav-agent', {speed: gFrenzySpeed}));
       banner.innerHTML = 'GHOST FRENZY!';
       banner.style.color = 'red';
-    } else if (this.currentEvent === 'reverse') {
-      banner.innerHTML = 'CONTROLS REVERSED!';
-      banner.style.color = 'magenta';
     }
 
     banner.style.display = 'block';
