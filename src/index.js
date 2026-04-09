@@ -358,10 +358,10 @@ AFRAME.registerComponent('player', {
   },
   updatePlayerDest: function (x, y, z) {
     let camera = document.querySelector("a-camera");
-    let angle = camera.getAttribute("rotation");
+    let angle = camera.object3D.rotation.y; // radians, live from look-controls
 
-    let _z = step * Math.cos(angle.y * Math.PI / 180);
-    let _x = step * Math.sin(angle.y * Math.PI / 180);
+    let _z = step * Math.cos(angle);
+    let _x = step * Math.sin(angle);
     let z_ = Math.round((z - _z - startZ)/step);
     let x_ = Math.round((x - _x - startX)/step);
     let i = z_ > row - 1 ? row - 1: z_ < 0 ? 0 : z_;
