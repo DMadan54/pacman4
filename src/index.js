@@ -578,13 +578,17 @@ AFRAME.registerComponent('player', {
     }, 1000);
   },
   updateEvent: function () {
+    const countdown = document.getElementById('event-countdown');
     if (this.eventDuration > 0) {
       this.eventDuration--;
       const secs = Math.ceil(this.eventDuration / 4);
-      document.getElementById('event-countdown').innerHTML = 'BOOST: ' + secs + 's';
+      countdown.innerHTML = '⚡ BOOST: ' + secs + 's';
       if (this.eventDuration === 0) this.onEventEnd();
     } else {
       this.eventTimer--;
+      const secsToNext = Math.ceil(this.eventTimer / 4);
+      countdown.innerHTML = 'BOOST IN: ' + secsToNext + 's';
+      countdown.style.display = 'block';
       if (this.eventTimer <= 0) {
         this.eventTimer = eventInterval;
         this.eventDuration = eventLength;
@@ -595,13 +599,11 @@ AFRAME.registerComponent('player', {
   onEventStart: function () {
     this.player.setAttribute('nav-agent', {speed: playerBoostSpeed});
     document.getElementById('event-banner').style.display = 'block';
-    document.getElementById('event-countdown').style.display = 'block';
     setTimeout(() => document.getElementById('event-banner').style.display = 'none', 2000);
   },
   onEventEnd: function () {
     this.player.setAttribute('nav-agent', {speed: playerSpeed});
     document.getElementById('event-banner').style.display = 'none';
-    document.getElementById('event-countdown').style.display = 'none';
   },
   stop: function () {
     disableCamera();
