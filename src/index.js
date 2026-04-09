@@ -358,13 +358,11 @@ AFRAME.registerComponent('player', {
   },
   updatePlayerDest: function (x, y, z) {
     let camera = document.querySelector("a-camera");
-    const dir = new THREE.Vector3();
-    camera.object3D.getWorldDirection(dir);
-    dir.y = 0;
-    dir.normalize();
+    const lookControls = camera.components['look-controls'];
+    const yaw = lookControls && lookControls.yawObject ? lookControls.yawObject.rotation.y : 0;
 
-    let _z = -step * dir.z;
-    let _x = -step * dir.x;
+    let _z = step * Math.cos(yaw);
+    let _x = step * Math.sin(yaw);
     let z_ = Math.round((z - _z - startZ)/step);
     let x_ = Math.round((x - _x - startX)/step);
     let i = z_ > row - 1 ? row - 1: z_ < 0 ? 0 : z_;
