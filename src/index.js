@@ -33,8 +33,37 @@ const gCollideDist = 0.6;
 const pelletScore = 10;
 const pillScore = 50;
 const ghostScore = 200;
+const cherryScore = 100;
+const HALLOWEEN_THEME = {
+  mazeOpacity: 1,
+  mazeColor: 0xFF0000,
+  pumpkinColor: 0xFF7A00,
+  skyColor: '#000000',
+  floorColor: '#000000',
+  fog: '',
+  logo: 'assets/images/halloween-logo.png'
+};
+const NORMAL_THEME = {
+  mazeOpacity: 0.75,
+  mazeColor: 0xFF69B4,
+  skyColor: 'blue',
+  floorColor: 'purple',
+  logo: 'assets/images/logo.png'
+};
 
 let path = [];
+let cherryEls = [];
+let cherryPositions = [];
+let halloweenPumpkinEls = [];
+let halloweenPumpkinPositions = [];
+let themeState = 'normal';
+let blackFruitEl = null;
+let blackFruitCollected = false;
+let purpleFruitEl = null;
+let pumpkinPellets = []; // stores {pumpkin, sphere, id} pairs for theme swaps
+const FRUIT_POS = { x: startX + 13 * step, y, z: startZ + 22 * step };
+// Pumpkin model is authored with an internal +Y offset, so compensate at placement.
+const PUMPKIN_MODEL_Y_OFFSET = 2.2159;
 let pCnt = 0;
 let totalP = 0;
 let targetPos;
@@ -110,10 +139,16 @@ AFRAME.registerComponent('maze', {
     });
   },
   initScene: function () {
-    // Set opacity of the wall
-    setOpacity(this.el, 0.75);
+    // Ensure scene starts in normal theme.
+    setOpacity(this.el, NORMAL_THEME.mazeOpacity);
+    setMeshColor(this.el, NORMAL_THEME.mazeColor);
+    const sceneEl = this.el.sceneEl;
+    const skyEl = document.getElementById('sky') || document.querySelector('a-sky');
+    if (skyEl) skyEl.setAttribute('color', NORMAL_THEME.skyColor);
+    const floorEl = document.getElementById('floor') || document.querySelector('a-plane');
+    if (floorEl) floorEl.setAttribute('color', NORMAL_THEME.floorColor);
+    if (sceneEl) sceneEl.removeAttribute('fog');
 
-    let sceneEl = this.el.sceneEl;
     let cnt = 0;
     let line = [];
     
@@ -155,6 +190,18 @@ AFRAME.registerComponent('maze', {
           sphere.appendChild(animation);
         }
         sceneEl.appendChild(sphere);
+
+        // Pre-create pumpkin counterpart so theme swap is instant and reliable.
+        const isPowerPill = maze[i] >= P.POWERPILL;
+        const pumpkin = document.createElement('a-entity');
+        pumpkin.setAttribute('gltf-model', '#pumpkin');
+        pumpkin.setAttribute('position', `${x} ${y - PUMPKIN_MODEL_Y_OFFSET} ${z}`);
+        pumpkin.setAttribute('id', `p${i}_pumpkin`);
+        pumpkin.setAttribute('scale', isPowerPill ? '0.08 0.08 0.08' : '0.05 0.05 0.05');
+        pumpkin.setAttribute('visible', false);
+        tintEntityModel(pumpkin, HALLOWEEN_THEME.pumpkinColor);
+        sceneEl.appendChild(pumpkin);
+        pumpkinPellets.push({pumpkin, sphere, id: `p${i}`});
       }
       
       // Store positions in path
@@ -167,6 +214,67 @@ AFRAME.registerComponent('maze', {
       }
     }
     totalP = pCnt;
+    this.initCherries();
+    this.initHalloweenPumpkins();
+    this.initThemeFruits();
+  },
+  initHalloweenPumpkins: function () {
+    let sceneEl = this.el.sceneEl;
+    const positions = [
+      {x: startX + 15 * step, z: startZ + 22 * step}, // near player start
+      {x: startX + 21 * step, z: startZ +  4 * step}, // top-right
+      {x: startX +  1 * step, z: startZ + 18 * step}, // left-middle
+    ];
+    positions.forEach(({x: px, z: pz}, idx) => {
+      let pumpkin = document.createElement('a-entity');
+      pumpkin.setAttribute('halloween-trigger', '');
+      pumpkin.setAttribute('gltf-model', '#pumpkin');
+      pumpkin.setAttribute('position', `${px} ${y - PUMPKIN_MODEL_Y_OFFSET} ${pz}`);
+      pumpkin.setAttribute('scale', '0.08 0.08 0.08');
+      pumpkin.setAttribute('id', `halloween-pumpkin-${idx}`);
+      tintEntityModel(pumpkin, HALLOWEEN_THEME.pumpkinColor);
+      sceneEl.appendChild(pumpkin);
+      halloweenPumpkinEls.push(pumpkin);
+      halloweenPumpkinPositions.push({x: px, z: pz});
+    });
+  },
+  initThemeFruits: function () {
+    window._mazeEl = this.el;
+    let sceneEl = this.el.sceneEl;
+
+    blackFruitEl = document.createElement('a-sphere');
+    blackFruitEl.setAttribute('color', '#111111');
+    blackFruitEl.setAttribute('radius', '0.2');
+    blackFruitEl.setAttribute('position', `${FRUIT_POS.x} ${FRUIT_POS.y} ${FRUIT_POS.z}`);
+    blackFruitEl.setAttribute('id', 'black-fruit');
+    blackFruitEl.setAttribute('visible', false);
+    sceneEl.appendChild(blackFruitEl);
+
+    purpleFruitEl = document.createElement('a-sphere');
+    purpleFruitEl.setAttribute('color', '#800080');
+    purpleFruitEl.setAttribute('radius', '0.2');
+    purpleFruitEl.setAttribute('position', `${FRUIT_POS.x} ${FRUIT_POS.y} ${FRUIT_POS.z}`);
+    purpleFruitEl.setAttribute('id', 'purple-fruit');
+    purpleFruitEl.setAttribute('visible', false);
+    sceneEl.appendChild(purpleFruitEl);
+  },
+  initCherries: function () {
+    let sceneEl = this.el.sceneEl;
+    const positions = [
+      {x: startX + 14 * step, z: startZ + 22 * step}, // near player start
+      {x: startX + 20 * step, z: startZ +  3 * step}, // top-right
+      {x: startX +  0 * step, z: startZ + 19 * step}, // left-middle
+    ];
+    positions.forEach(({x: cx, z: cz}) => {
+      let sphere = document.createElement('a-sphere');
+      sphere.setAttribute('cherry', '');
+      sphere.setAttribute('color', 'red');
+      sphere.setAttribute('radius', '0.2');
+      sphere.setAttribute('position', `${cx} ${y} ${cz}`);
+      sceneEl.appendChild(sphere);
+      cherryEls.push(sphere);
+      cherryPositions.push({x: cx, z: cz});
+    });
   },
   initStartButton: function () {
     let button = document.getElementById("start");
@@ -178,10 +286,19 @@ AFRAME.registerComponent('maze', {
   },
   start: function () {
     this.initLife();
+    blackFruitCollected = false;
+
+    // Reset theme before restoring pellets (switchToNormal restores sphere elements)
+    if (themeState === 'halloween' && window._mazeEl) switchToNormal(window._mazeEl);
 
     document.querySelectorAll('[pellet]')
       .forEach(p => p.setAttribute('visible', true));
     pCnt = totalP;
+    cherryEls.forEach(c => c.setAttribute('visible', true));
+    halloweenPumpkinEls.forEach(p => p.setAttribute('visible', true));
+
+    if (blackFruitEl) blackFruitEl.setAttribute('visible', true);
+    if (purpleFruitEl) purpleFruitEl.setAttribute('visible', false);
 
     document.getElementById("logo").style.display = 'none';
     document.getElementById("start").style.display = 'none';
@@ -210,6 +327,7 @@ AFRAME.registerComponent('player', {
   },
   tick: function () {
     if (!dead && path.length >= row){
+      if (themeState === 'halloween') applyThemeVisuals('halloween');
       this.nextBg = siren;
 
       let position = this.el.getAttribute('position');
@@ -219,6 +337,9 @@ AFRAME.registerComponent('player', {
 
       this.updatePlayerDest(x, y, z);
       this.onCollideWithPellets(x, z);
+      this.onCollideWithCherry(x, z);
+      this.onCollideWithHalloweenPumpkin(x, z);
+      this.onCollideWithFruit(x, z);
       this.updateGhosts(x, z);
       this.updateMode(position);
       
@@ -365,6 +486,47 @@ AFRAME.registerComponent('player', {
       if (pCnt < 1) this.onWin();
     }
   },
+  onCollideWithCherry: function (x, z) {
+    for (let i = 0; i < cherryEls.length; i++) {
+      if (!cherryEls[i].object3D.visible) continue;
+      let pos = cherryPositions[i];
+      if (Math.abs(pos.x - x) < 0.5 && Math.abs(pos.z - z) < 0.5) {
+        cherryEls[i].setAttribute('visible', false);
+        score += cherryScore;
+        eating.play();
+      }
+    }
+  },
+  onCollideWithHalloweenPumpkin: function (x, z) {
+    for (let i = 0; i < halloweenPumpkinEls.length; i++) {
+      if (!halloweenPumpkinEls[i].object3D.visible) continue;
+      let pos = halloweenPumpkinPositions[i];
+      if (Math.abs(pos.x - x) < 0.5 && Math.abs(pos.z - z) < 0.5) {
+        halloweenPumpkinEls[i].setAttribute('visible', false);
+        score += cherryScore;
+        eating.play();
+        break;
+      }
+    }
+  },
+  onCollideWithFruit: function (x, z) {
+    if (blackFruitEl && blackFruitEl.object3D && blackFruitEl.object3D.visible) {
+      const pos = blackFruitEl.getAttribute('position');
+      if (Math.abs(pos.x - x) < 0.5 && Math.abs(pos.z - z) < 0.5) {
+        blackFruitEl.setAttribute('visible', false);
+        blackFruitCollected = true;
+        eating.play();
+        switchToHalloween(window._mazeEl);
+      }
+    }
+    if (purpleFruitEl && purpleFruitEl.object3D && purpleFruitEl.object3D.visible) {
+      const pos = purpleFruitEl.getAttribute('position');
+      if (Math.abs(pos.x - x) < 0.5 && Math.abs(pos.z - z) < 0.5) {
+        eating.play();
+        switchToNormal(window._mazeEl);
+      }
+    }
+  },
   onEatPill: function () {
     pillCnt = pillDuration;
     this.hitGhosts = [];
@@ -479,6 +641,148 @@ function setOpacity(object, opacity) {
       node.material.needsUpdate = true;
     }
   });
+}
+
+function setMeshColor(object, colorHex) {
+  const mesh = object.getObject3D('mesh');
+  if (!mesh) return;
+  mesh.traverse(node => {
+    if (!node.isMesh || !node.material) return;
+    const applyToMat = (mat) => {
+      if (!mat) return;
+      if (mat.color && typeof mat.color.setHex === 'function') mat.color.setHex(colorHex);
+      if (mat.emissive && typeof mat.emissive.setHex === 'function') mat.emissive.setHex(0x000000);
+      if ('emissiveIntensity' in mat) mat.emissiveIntensity = 0;
+      mat.needsUpdate = true;
+    };
+    if (Array.isArray(node.material)) node.material.forEach(applyToMat);
+    else applyToMat(node.material);
+  });
+}
+
+function setSolidMeshColor(object, colorHex) {
+  const mesh = object.getObject3D('mesh');
+  if (!mesh) return;
+  mesh.traverse(node => {
+    if (!node.isMesh || !node.material) return;
+    const applyToMat = (mat) => {
+      if (!mat) return;
+      if ('map' in mat) mat.map = null;
+      if ('emissiveMap' in mat) mat.emissiveMap = null;
+      if (mat.color && typeof mat.color.setHex === 'function') mat.color.setHex(colorHex);
+      if (mat.emissive && typeof mat.emissive.setHex === 'function') mat.emissive.setHex(0x000000);
+      if ('emissiveIntensity' in mat) mat.emissiveIntensity = 0;
+      if ('metalness' in mat) mat.metalness = 0;
+      if ('roughness' in mat) mat.roughness = 1;
+      mat.needsUpdate = true;
+    };
+    if (Array.isArray(node.material)) node.material.forEach(applyToMat);
+    else applyToMat(node.material);
+  });
+}
+
+function tintEntityModel(entity, colorHex) {
+  const tint = () => {
+    const model = entity.getObject3D('mesh');
+    if (!model) return;
+    model.traverse(node => {
+      if (!node.isMesh || !node.material) return;
+      const applyToMat = (mat) => {
+        if (!mat) return;
+        if ('map' in mat) mat.map = null;
+        if ('emissiveMap' in mat) mat.emissiveMap = null;
+        if (mat.color && typeof mat.color.setHex === 'function') mat.color.setHex(colorHex);
+        if (mat.emissive && typeof mat.emissive.setHex === 'function') mat.emissive.setHex(0x000000);
+        if ('emissiveIntensity' in mat) mat.emissiveIntensity = 0;
+        if ('metalness' in mat) mat.metalness = 0;
+        if ('roughness' in mat) mat.roughness = 1;
+        mat.needsUpdate = true;
+      };
+      if (Array.isArray(node.material)) node.material.forEach(applyToMat);
+      else applyToMat(node.material);
+    });
+  };
+
+  tint();
+  entity.addEventListener('model-loaded', tint, {once: true});
+}
+
+function applyThemeVisuals(mode) {
+  const isHalloween = mode === 'halloween';
+  const theme = isHalloween ? HALLOWEEN_THEME : NORMAL_THEME;
+  const mazeEl = window._mazeEl;
+
+  if (mazeEl) {
+    setOpacity(mazeEl, theme.mazeOpacity);
+    if (isHalloween) setSolidMeshColor(mazeEl, theme.mazeColor);
+    else setMeshColor(mazeEl, theme.mazeColor);
+  }
+
+  const skyEl = document.getElementById('sky') || document.querySelector('a-sky');
+  if (skyEl) skyEl.setAttribute('color', theme.skyColor);
+
+  const floorEl = document.getElementById('floor') || document.querySelector('a-plane');
+  if (floorEl) floorEl.setAttribute('color', theme.floorColor);
+}
+
+function switchToHalloween(mazeEl) {
+  if (!mazeEl || themeState === 'halloween') return;
+  themeState = 'halloween';
+  applyThemeVisuals('halloween');
+
+  const sceneEl = document.querySelector('a-scene');
+  if (sceneEl) sceneEl.removeAttribute('fog');
+
+  const logoEl = document.getElementById('logo');
+  if (logoEl) logoEl.src = HALLOWEEN_THEME.logo;
+
+  // Re-apply after a short delay to avoid model/material timing races.
+  setTimeout(() => applyThemeVisuals('halloween'), 50);
+
+  // Swap pre-built sphere pellets to pumpkin pellets.
+  pumpkinPellets.forEach(({pumpkin, sphere, id}) => {
+    const isVisible = sphere.getAttribute('visible') !== false;
+    pumpkin.setAttribute('id', id);
+    pumpkin.setAttribute('pellet', '');
+    pumpkin.setAttribute('visible', isVisible);
+    sphere.setAttribute('id', `${id}_orig`);
+    sphere.removeAttribute('pellet');
+    sphere.setAttribute('visible', false);
+  });
+
+  cherryEls.forEach(c => c.setAttribute('visible', false));
+  if (blackFruitEl) blackFruitEl.setAttribute('visible', false);
+  if (purpleFruitEl) purpleFruitEl.setAttribute('visible', true);
+}
+
+function switchToNormal(mazeEl) {
+  if (!mazeEl || themeState === 'normal') return;
+  themeState = 'normal';
+  applyThemeVisuals('normal');
+
+  const sceneEl = document.querySelector('a-scene');
+  if (sceneEl) sceneEl.removeAttribute('fog');
+
+  const logoEl = document.getElementById('logo');
+  if (logoEl) logoEl.src = NORMAL_THEME.logo;
+
+  // Restore sphere pellets and hide pumpkin counterparts.
+  pumpkinPellets.forEach(({pumpkin, sphere, id}) => {
+    const isVisible = pumpkin.getAttribute('visible') !== false;
+    sphere.setAttribute('id', id);
+    sphere.setAttribute('pellet', '');
+    sphere.setAttribute('visible', isVisible);
+    pumpkin.setAttribute('id', `${id}_pumpkin`);
+    pumpkin.removeAttribute('pellet');
+    pumpkin.setAttribute('visible', false);
+  });
+
+  cherryEls.forEach(c => {
+    if (c.object3D && c.object3D.visible) c.setAttribute('visible', true);
+  });
+  // Pumpkin pickups behave like cherries: remain collectable across themes unless eaten.
+  if (purpleFruitEl) purpleFruitEl.setAttribute('visible', false);
+  if (blackFruitEl) blackFruitEl.setAttribute('visible', !blackFruitCollected);
 }
 
 function updateAgentDest(object, dest) {
