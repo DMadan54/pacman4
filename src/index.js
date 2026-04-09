@@ -61,7 +61,7 @@ let blackFruitEl = null;
 let blackFruitCollected = false;
 let purpleFruitEl = null;
 let pumpkinPellets = []; // stores {pumpkin, sphere, id} pairs for theme swaps
-const FRUIT_POS = { x: startX + 13 * step, y, z: startZ + 22 * step };
+const FRUIT_POS = { x: startX + 17 * step, y, z: startZ + 22 * step };
 // Pumpkin model is authored with an internal +Y offset, so compensate at placement.
 const PUMPKIN_MODEL_Y_OFFSET = 2.2159;
 let pCnt = 0;
