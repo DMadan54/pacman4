@@ -30,8 +30,9 @@ const playerSpeed = 0.7;
 const playerBoostSpeed = 1.5;
 const gFrenzySpeed = 1.8;
 const eventInterval = 240; // ticks between events (~1 min at 250ms/tick)
-const events = ['speedBoost', 'ghostFrenzy'];
-const eventDurations = {speedBoost: 120, ghostFrenzy: 120};
+const events = ['speedBoost', 'ghostFrenzy', 'starPower'];
+const eventDurations = {speedBoost: 120, ghostFrenzy: 120, starPower: 120};
+const starColor = 0xFFD700; // gold
 const gNormSpeed = 0.65;
 const gSlowSpeed = 0.2;
 const gFastSpeed = 1.5;
@@ -328,6 +329,7 @@ AFRAME.registerComponent('player', {
     this.eventTimer = eventInterval;
     this.eventDuration = 0;
     this.currentEvent = null;
+    this.starPowerActive = false;
     this.hitGhosts = [];
     this.ghosts = document.querySelectorAll('[ghost]');
     this.player = document.querySelector('[player]');
@@ -450,7 +452,7 @@ AFRAME.registerComponent('player', {
 
     if (Math.abs(ghostX - x) < gCollideDist && Math.abs(ghostZ - z) < gCollideDist) {
       if (!ghost.dead){
-        if (ghost.slow) {
+        if (ghost.slow || this.starPowerActive) {
           eatGhost.play();
 
           this.hitGhosts.push(i);
@@ -466,7 +468,7 @@ AFRAME.registerComponent('player', {
 
           setOpacity(ghost, 0.3);
           score += ghostScore * this.hitGhosts.length;
-        } else {
+        } else if (!this.starPowerActive) {
           this.onDie();
           return;
         }
@@ -585,7 +587,11 @@ AFRAME.registerComponent('player', {
     if (this.eventDuration > 0) {
       this.eventDuration--;
       const secs = Math.ceil(this.eventDuration / 4);
-      countdown.innerHTML = '⚡ BOOST: ' + secs + 's';
+      const eventLabel = this.currentEvent === 'speedBoost' ? '⚡ BOOST'
+        : this.currentEvent === 'ghostFrenzy' ? '👻 FRENZY'
+        : this.currentEvent === 'starPower' ? '⭐ STAR POWER'
+        : '⚡ EVENT';
+      countdown.innerHTML = eventLabel + ': ' + secs + 's';
       if (this.eventDuration === 0) this.onEventEnd();
     } else {
       this.eventTimer--;
@@ -605,12 +611,22 @@ AFRAME.registerComponent('player', {
 
     if (this.currentEvent === 'speedBoost') {
       this.player.setAttribute('nav-agent', {speed: playerBoostSpeed});
-      banner.innerHTML = 'SPEED BOOST!';
+      banner.innerHTML = '⚡ SPEED BOOST!';
       banner.style.color = 'cyan';
     } else if (this.currentEvent === 'ghostFrenzy') {
       this.ghosts.forEach(g => g.setAttribute('nav-agent', {speed: gFrenzySpeed}));
-      banner.innerHTML = 'GHOST FRENZY!';
+      banner.innerHTML = '👻 GHOST FRENZY!';
       banner.style.color = 'red';
+    } else if (this.currentEvent === 'starPower') {
+      this.starPowerActive = true;
+      this.ghosts.forEach(g => {
+        if (!g.dead) {
+          updateGhostColor(g.object3D, starColor);
+          g.setAttribute('nav-agent', {speed: gSlowSpeed});
+        }
+      });
+      banner.innerHTML = '⭐ STAR POWER!';
+      banner.style.color = 'gold';
     }
 
     banner.style.display = 'block';
@@ -621,6 +637,14 @@ AFRAME.registerComponent('player', {
       this.player.setAttribute('nav-agent', {speed: playerSpeed});
     } else if (this.currentEvent === 'ghostFrenzy') {
       this.ghosts.forEach(g => g.setAttribute('nav-agent', {speed: gNormSpeed}));
+    } else if (this.currentEvent === 'starPower') {
+      this.starPowerActive = false;
+      this.ghosts.forEach(g => {
+        if (!g.dead) {
+          updateGhostColor(g.object3D, g.defaultColor);
+          g.setAttribute('nav-agent', {speed: gNormSpeed});
+        }
+      });
     }
     this.currentEvent = null;
     document.getElementById('event-banner').style.display = 'none';
@@ -633,6 +657,7 @@ AFRAME.registerComponent('player', {
     this.eventTimer = eventInterval;
     this.eventDuration = 0;
     this.currentEvent = null;
+    this.starPowerActive = false;
     document.getElementById('event-banner').style.display = 'none';
     document.getElementById('event-countdown').style.display = 'none';
     this.player.setAttribute('nav-agent', {speed: playerSpeed});
