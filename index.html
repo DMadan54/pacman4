@@ -56,6 +56,7 @@
       <a-asset-item id="navmesh" src="assets/models/navmesh.gltf"></a-asset-item>
       <a-asset-item id="ghost" src="assets/models/ghost.gltf"></a-asset-item>
       <a-asset-item id="maze" src="assets/models/maze.gltf"></a-asset-item>
+      <a-asset-item id="pumpkin" src="assets/models/single_pumpkin.glb"></a-asset-item>
       <img id="life" src="assets/images/pacman.png">
     </a-assets>
   
@@ -151,13 +152,14 @@
     </a-gltf-model>
 
 
-    <a-plane rotation="-90 0 0"
+    <a-plane id="floor"
+             rotation="-90 0 0"
              width="15"
              height="16"
              color="purple">
     </a-plane>
 
-    <a-sky color="green"></a-sky>
+    <a-sky id="sky" color="green"></a-sky>
   </a-scene>
 </body>
 </html>
