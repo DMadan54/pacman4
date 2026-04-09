@@ -30,8 +30,8 @@ const playerSpeed = 0.7;
 const playerBoostSpeed = 1.5;
 const gFrenzySpeed = 1.8;
 const eventInterval = 240; // ticks between events (~1 min at 250ms/tick)
-const eventLength = 120;   // ticks per event (~30 sec)
-const events = ['speedBoost', 'ghostFrenzy'];
+const events = ['speedBoost', 'ghostFrenzy', 'reverse'];
+const eventDurations = {speedBoost: 120, ghostFrenzy: 120, reverse: 60};
 const gNormSpeed = 0.65;
 const gSlowSpeed = 0.2;
 const gFastSpeed = 1.5;
@@ -371,8 +371,9 @@ AFRAME.registerComponent('player', {
     const lookControls = camera.components['look-controls'];
     const yaw = lookControls && lookControls.yawObject ? lookControls.yawObject.rotation.y : 0;
 
-    let _z = step * Math.cos(yaw);
-    let _x = step * Math.sin(yaw);
+    const reversed = this.currentEvent === 'reverse';
+    let _z = step * Math.cos(reversed ? -yaw : yaw);
+    let _x = step * Math.sin(reversed ? -yaw : yaw);
     let z_ = Math.round((z - _z - startZ)/step);
     let x_ = Math.round((x - _x - startX)/step);
     let i = z_ > row - 1 ? row - 1: z_ < 0 ? 0 : z_;
@@ -594,13 +595,13 @@ AFRAME.registerComponent('player', {
       countdown.style.display = 'block';
       if (this.eventTimer <= 0) {
         this.eventTimer = eventInterval;
-        this.eventDuration = eventLength;
-        this.onEventStart();
+        this.onEventStart(); // sets this.eventDuration internally
       }
     }
   },
   onEventStart: function () {
     this.currentEvent = events[Math.floor(Math.random() * events.length)];
+    this.eventDuration = eventDurations[this.currentEvent];
     const banner = document.getElementById('event-banner');
 
     if (this.currentEvent === 'speedBoost') {
@@ -611,6 +612,9 @@ AFRAME.registerComponent('player', {
       this.ghosts.forEach(g => g.setAttribute('nav-agent', {speed: gFrenzySpeed}));
       banner.innerHTML = 'GHOST FRENZY!';
       banner.style.color = 'red';
+    } else if (this.currentEvent === 'reverse') {
+      banner.innerHTML = 'CONTROLS REVERSED!';
+      banner.style.color = 'magenta';
     }
 
     banner.style.display = 'block';
