@@ -339,8 +339,22 @@ AFRAME.registerComponent('player', {
     this.turboGhostEl = null;
     this.hitGhosts = [];
     this.ghosts = document.querySelectorAll('[ghost]');
-    const personalities = ['chaser', 'predictor', 'flanker', 'roamer'];
-    this.ghosts.forEach((g, i) => { g.personality = personalities[i % personalities.length]; });
+    const personalities = ['blinky', 'pinky', 'inky', 'clyde'];
+    // Scatter corners: each ghost retreats to their own maze corner in scatter mode
+    const scatterCorners = [
+      new THREE.Vector3(startX + 25 * step, 0, startZ),                  // Blinky: top-right
+      new THREE.Vector3(startX,             0, startZ),                   // Pinky:  top-left
+      new THREE.Vector3(startX + 25 * step, 0, startZ + 28 * step),      // Inky:   bottom-right
+      new THREE.Vector3(startX,             0, startZ + 28 * step),       // Clyde:  bottom-left
+    ];
+    let blinkyGhost = null;
+    this.ghosts.forEach((g, i) => {
+      g.personality    = personalities[i % personalities.length];
+      g.scatterCorner  = scatterCorners[i % scatterCorners.length];
+      if (g.personality === 'blinky') blinkyGhost = g;
+    });
+    // Give Inky a reference to Blinky so it can use his position for targeting
+    this.ghosts.forEach(g => { g.blinkyRef = blinkyGhost; });
     this.player = document.querySelector('[player]');
     this.currentBg = siren;
     this.nextBg = siren;
@@ -758,50 +772,61 @@ AFRAME.registerComponent('ghost', {
   }
 }); 
 
-// Personality-based ghost targeting
+// Classic Pac-Man ghost AI — each ghost has a distinct targeting personality
 function randomIntersection() {
   const p = Math.floor(Math.random() * intersections.length);
   return new THREE.Vector3(startX + intersections[p][0] * step, 0, startZ + intersections[p][1] * step);
 }
 
 function computeGhostTarget(ghost) {
-  // Scatter mode or no player data yet — roam randomly
-  if (!targetPos || !playerWorldPos) return randomIntersection();
+  if (!playerWorldPos) return randomIntersection();
+
+  // Scatter mode: every ghost retreats to their dedicated maze corner
+  if (!targetPos) return ghost.scatterCorner ? ghost.scatterCorner.clone() : randomIntersection();
 
   switch (ghost.personality) {
-    case 'chaser':
-      // Direct pursuit: always go exactly where the player is
+    case 'blinky':
+      // Shadow — direct pursuit, always targets the player's exact position
       return playerWorldPos.clone();
 
-    case 'predictor': {
-      // Dead reckoning: predict where the player will be in 5 steps
-      // by projecting along their current camera facing direction
-      const lookAhead = 5 * step;
+    case 'pinky': {
+      // Speedy — ambush, targets 4 tiles ahead of the player's facing direction
+      const ahead = 4 * step;
       return new THREE.Vector3(
-        playerWorldPos.x + Math.sin(playerYaw) * lookAhead,
+        playerWorldPos.x + Math.sin(playerYaw) * ahead,
         0,
-        playerWorldPos.z + Math.cos(playerYaw) * lookAhead
+        playerWorldPos.z + Math.cos(playerYaw) * ahead
       );
     }
 
-    case 'flanker': {
-      // Flanking: target behind the player to cut off retreat
-      const flankDist = 4 * step;
-      return new THREE.Vector3(
-        playerWorldPos.x - Math.sin(playerYaw) * flankDist,
+    case 'inky': {
+      // Bashful — the most complex: uses Blinky's position as a reference.
+      // 1. Find the point 2 tiles ahead of the player.
+      // 2. Draw a vector from Blinky to that point and double it.
+      // This creates an unpredictable flanking effect that depends on where Blinky is.
+      const pivot = new THREE.Vector3(
+        playerWorldPos.x + Math.sin(playerYaw) * 2 * step,
         0,
-        playerWorldPos.z - Math.cos(playerYaw) * flankDist
+        playerWorldPos.z + Math.cos(playerYaw) * 2 * step
+      );
+      const bPos = (ghost.blinkyRef && !ghost.blinkyRef.dead)
+        ? ghost.blinkyRef.object3D.position
+        : playerWorldPos;
+      return new THREE.Vector3(
+        pivot.x + (pivot.x - bPos.x),
+        0,
+        pivot.z + (pivot.z - bPos.z)
       );
     }
 
-    case 'roamer': {
-      // Pressure AI: chase from a distance, back off when close
-      // Forces the player into the other ghosts rather than direct pursuit
+    case 'clyde': {
+      // Pokey — chases when far (> 8 tiles), retreats to his corner when close.
+      // Prevents him from being a reliable threat and creates herding pressure.
       const gPos = ghost.object3D.position;
       const dx = gPos.x - playerWorldPos.x;
       const dz = gPos.z - playerWorldPos.z;
-      const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist < 2.5) return randomIntersection();
+      if (Math.sqrt(dx * dx + dz * dz) < 8 * step)
+        return ghost.scatterCorner ? ghost.scatterCorner.clone() : randomIntersection();
       return playerWorldPos.clone();
     }
 
