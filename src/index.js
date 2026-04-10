@@ -30,9 +30,11 @@ const playerSpeed = 0.7;
 const playerBoostSpeed = 1.5;
 const gFrenzySpeed = 1.8;
 const eventInterval = 240; // ticks between events (~1 min at 250ms/tick)
-const events = ['speedBoost', 'ghostFrenzy', 'starPower', 'doublePoints'];
-const eventDurations = {speedBoost: 120, ghostFrenzy: 120, starPower: 120, doublePoints: 120};
+const events = ['speedBoost', 'ghostFrenzy', 'starPower', 'doublePoints', 'scoreFrenzy', 'turboGhost'];
+const eventDurations = {speedBoost: 120, ghostFrenzy: 120, starPower: 120, doublePoints: 120, scoreFrenzy: 40, turboGhost: 120};
 const starColor = 0xFFD700; // gold
+const turboColor = 0xFF4500; // orange-red
+const gTurboSpeed = 3.5;
 const gNormSpeed = 0.65;
 const gSlowSpeed = 0.2;
 const gFastSpeed = 1.5;
@@ -331,6 +333,8 @@ AFRAME.registerComponent('player', {
     this.currentEvent = null;
     this.starPowerActive = false;
     this.doublePoints = false;
+    this.scoreFrenzy = false;
+    this.turboGhostEl = null;
     this.hitGhosts = [];
     this.ghosts = document.querySelectorAll('[ghost]');
     this.player = document.querySelector('[player]');
@@ -468,7 +472,7 @@ AFRAME.registerComponent('player', {
           updateAgentDest(ghost, ghost.defaultPos);
 
           setOpacity(ghost, 0.3);
-          score += ghostScore * this.hitGhosts.length * (this.doublePoints ? 2 : 1);
+          score += ghostScore * this.hitGhosts.length * (this.doublePoints ? 2 : 1) * (this.scoreFrenzy ? 10 : 1);
         } else if (!this.starPowerActive) {
           this.onDie();
           return;
@@ -490,11 +494,11 @@ AFRAME.registerComponent('player', {
         // Power pill
         if (currentP[4] >= P.POWERPILL) {
           eatPill.play();
-          score += pillScore * (this.doublePoints ? 2 : 1);
+          score += pillScore * (this.doublePoints ? 2 : 1) * (this.scoreFrenzy ? 10 : 1);
           this.onEatPill();
         } else {
           eating.play();
-          score += pelletScore * (this.doublePoints ? 2 : 1);
+          score += pelletScore * (this.doublePoints ? 2 : 1) * (this.scoreFrenzy ? 10 : 1);
         }
       }
       if (pCnt < 1) this.onWin();
@@ -506,7 +510,7 @@ AFRAME.registerComponent('player', {
       let pos = cherryPositions[i];
       if (Math.abs(pos.x - x) < 0.5 && Math.abs(pos.z - z) < 0.5) {
         cherryEls[i].setAttribute('visible', false);
-        score += cherryScore * (this.doublePoints ? 2 : 1);
+        score += cherryScore * (this.doublePoints ? 2 : 1) * (this.scoreFrenzy ? 10 : 1);
         eating.play();
       }
     }
@@ -517,7 +521,7 @@ AFRAME.registerComponent('player', {
       let pos = halloweenPumpkinPositions[i];
       if (Math.abs(pos.x - x) < 0.5 && Math.abs(pos.z - z) < 0.5) {
         halloweenPumpkinEls[i].setAttribute('visible', false);
-        score += cherryScore * (this.doublePoints ? 2 : 1);
+        score += cherryScore * (this.doublePoints ? 2 : 1) * (this.scoreFrenzy ? 10 : 1);
         eating.play();
         break;
       }
@@ -592,6 +596,8 @@ AFRAME.registerComponent('player', {
         : this.currentEvent === 'ghostFrenzy' ? '👻 FRENZY'
         : this.currentEvent === 'starPower' ? '⭐ STAR POWER'
         : this.currentEvent === 'doublePoints' ? '2X POINTS'
+        : this.currentEvent === 'scoreFrenzy' ? '🔥 FRENZY'
+        : this.currentEvent === 'turboGhost' ? '💀 TURBO GHOST'
         : '⚡ EVENT';
       countdown.innerHTML = eventLabel + ': ' + secs + 's';
       if (this.eventDuration === 0) this.onEventEnd();
@@ -633,6 +639,19 @@ AFRAME.registerComponent('player', {
       this.doublePoints = true;
       banner.innerHTML = '2X POINTS!';
       banner.style.color = '#00FF88';
+    } else if (this.currentEvent === 'scoreFrenzy') {
+      this.scoreFrenzy = true;
+      banner.innerHTML = '🔥 SCORE FRENZY!';
+      banner.style.color = 'orange';
+    } else if (this.currentEvent === 'turboGhost') {
+      const alive = Array.from(this.ghosts).filter(g => !g.dead);
+      if (alive.length > 0) {
+        this.turboGhostEl = alive[Math.floor(Math.random() * alive.length)];
+        updateGhostColor(this.turboGhostEl.object3D, turboColor);
+        this.turboGhostEl.setAttribute('nav-agent', {speed: gTurboSpeed});
+      }
+      banner.innerHTML = '💀 TURBO GHOST!';
+      banner.style.color = 'orangered';
     }
 
     banner.style.display = 'block';
@@ -653,6 +672,14 @@ AFRAME.registerComponent('player', {
       });
     } else if (this.currentEvent === 'doublePoints') {
       this.doublePoints = false;
+    } else if (this.currentEvent === 'scoreFrenzy') {
+      this.scoreFrenzy = false;
+    } else if (this.currentEvent === 'turboGhost') {
+      if (this.turboGhostEl && !this.turboGhostEl.dead) {
+        updateGhostColor(this.turboGhostEl.object3D, this.turboGhostEl.defaultColor);
+        this.turboGhostEl.setAttribute('nav-agent', {speed: gNormSpeed});
+      }
+      this.turboGhostEl = null;
     }
     this.currentEvent = null;
     document.getElementById('event-banner').style.display = 'none';
@@ -667,6 +694,11 @@ AFRAME.registerComponent('player', {
     this.currentEvent = null;
     this.starPowerActive = false;
     this.doublePoints = false;
+    this.scoreFrenzy = false;
+    if (this.turboGhostEl && !this.turboGhostEl.dead) {
+      updateGhostColor(this.turboGhostEl.object3D, this.turboGhostEl.defaultColor);
+    }
+    this.turboGhostEl = null;
     document.getElementById('event-banner').style.display = 'none';
     document.getElementById('event-countdown').style.display = 'none';
     this.player.setAttribute('nav-agent', {speed: playerSpeed});
