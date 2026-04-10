@@ -786,12 +786,15 @@ function playCutscene(onComplete) {
   const overlay = document.getElementById('cutscene-overlay');
   const video   = document.getElementById('cutscene-video');
   const skip    = document.getElementById('cutscene-skip');
+  let finished  = false;
 
-  overlay.style.display = 'flex';
+  overlay.style.display = 'block';
   video.currentTime = 0;
   video.play();
 
   const done = () => {
+    if (finished) return;
+    finished = true;
     overlay.style.display = 'none';
     video.pause();
     video.currentTime = 0;
@@ -800,8 +803,8 @@ function playCutscene(onComplete) {
     onComplete();
   };
 
-  video.addEventListener('ended', done, {once: true});
-  skip.addEventListener('click', done, {once: true});
+  video.addEventListener('ended', done);
+  skip.addEventListener('click', done);
 }
 
 // Classic Pac-Man ghost AI — each ghost has a distinct targeting personality
