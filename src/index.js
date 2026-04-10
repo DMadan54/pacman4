@@ -302,9 +302,12 @@ AFRAME.registerComponent('maze', {
     // Reset theme before restoring pellets (switchToNormal restores sphere elements)
     if (themeState === 'halloween' && window._mazeEl) switchToNormal(window._mazeEl);
 
-    document.querySelectorAll('[pellet]')
-      .forEach(p => p.setAttribute('visible', true));
+    const allPellets = document.querySelectorAll('[pellet]');
+    allPellets.forEach(p => p.setAttribute('visible', true));
     pCnt = totalP;
+    // TESTING: leave only one pellet
+    allPellets.forEach((p, i) => { if (i > 0) p.setAttribute('visible', false); });
+    pCnt = 1;
     cherryEls.forEach(c => c.setAttribute('visible', true));
     halloweenPumpkinEls.forEach(p => p.setAttribute('visible', true));
 
