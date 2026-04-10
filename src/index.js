@@ -578,7 +578,14 @@ AFRAME.registerComponent('player', {
   },
   onWin: function () {
     this.stop();
-    this.onGameOver(true);
+    const savedScore = score;
+    const mazeComp = this;
+    playCutscene(() => {
+      mazeComp.start();
+      // Preserve score across levels
+      score = savedScore;
+      document.querySelector('#score').setAttribute('text', {value: score});
+    });
   },
   onDie: function () {
     die.play();
@@ -771,6 +778,28 @@ AFRAME.registerComponent('ghost', {
     updateAgentDest(el, computeGhostTarget(el));
   }
 }); 
+
+function playCutscene(onComplete) {
+  const overlay = document.getElementById('cutscene-overlay');
+  const video   = document.getElementById('cutscene-video');
+  const skip    = document.getElementById('cutscene-skip');
+
+  overlay.style.display = 'flex';
+  video.currentTime = 0;
+  video.play();
+
+  const done = () => {
+    overlay.style.display = 'none';
+    video.pause();
+    video.currentTime = 0;
+    video.removeEventListener('ended', done);
+    skip.removeEventListener('click', done);
+    onComplete();
+  };
+
+  video.addEventListener('ended', done, {once: true});
+  skip.addEventListener('click', done, {once: true});
+}
 
 // Classic Pac-Man ghost AI — each ghost has a distinct targeting personality
 function randomIntersection() {
