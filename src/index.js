@@ -82,6 +82,7 @@ let dead = true;
 let lifeCnt = 3;
 let highScore;
 let score = 0;
+let level = 1;
 let pillCnt = 0;
 let soundCtrl = true;
 
@@ -302,18 +303,8 @@ AFRAME.registerComponent('maze', {
     // Reset theme before restoring pellets (switchToNormal restores sphere elements)
     if (themeState === 'halloween' && window._mazeEl) switchToNormal(window._mazeEl);
 
-    const allPellets = document.querySelectorAll('[pellet]');
-    allPellets.forEach(p => p.setAttribute('visible', true));
+    document.querySelectorAll('[pellet]').forEach(p => p.setAttribute('visible', true));
     pCnt = totalP;
-    // TESTING: leave only the pellet closest to player spawn
-    let closest = null, closestDist = Infinity;
-    allPellets.forEach(p => {
-      const pos = p.getAttribute('position');
-      const d = Math.sqrt(pos.x * pos.x + (pos.z - 4) * (pos.z - 4));
-      if (d < closestDist) { closestDist = d; closest = p; }
-    });
-    allPellets.forEach(p => { if (p !== closest) p.setAttribute('visible', false); });
-    pCnt = 1;
     cherryEls.forEach(c => c.setAttribute('visible', true));
     halloweenPumpkinEls.forEach(p => p.setAttribute('visible', true));
 
@@ -324,11 +315,12 @@ AFRAME.registerComponent('maze', {
     document.getElementById("start").style.display = 'none';
     document.getElementById("gameover").style.display = 'none';
     document.getElementById("ready").style.display = 'block';
+    document.getElementById("level-display").style.display = 'block';
 
     score = 0;
-    document.querySelector('#score').setAttribute('text', {
-      'value': score
-    });
+    level = 1;
+    document.querySelector('#score').setAttribute('text', {value: score});
+    document.getElementById('level-display').innerHTML = 'LEVEL ' + level;
 
     ready.play();
     restart(3000);
@@ -475,6 +467,7 @@ AFRAME.registerComponent('player', {
     else
       gameoverEl.classList.remove("blink");
     gameoverEl.style.display = 'block';
+    document.getElementById("level-display").style.display = 'none';
 
     let startEl = document.getElementById("start");
     startEl.innerHTML = 'RESTART';
@@ -588,11 +581,12 @@ AFRAME.registerComponent('player', {
   onWin: function () {
     this.stop();
     const savedScore = score;
+    level++;
     playCutscene(() => {
       document.querySelector('[maze]').components.maze.start();
-      // Preserve score across levels
       score = savedScore;
       document.querySelector('#score').setAttribute('text', {value: score});
+      document.getElementById('level-display').innerHTML = 'LEVEL ' + level;
     });
   },
   onDie: function () {

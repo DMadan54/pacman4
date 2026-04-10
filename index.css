@@ -102,6 +102,19 @@ body {
   white-space: nowrap;
 }
 
+#level-display {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  font-size: 1em;
+  color: white;
+  font-family: 'PressStart2P';
+  background: rgba(0,0,0,0.6);
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: none;
+}
+
 #event-countdown {
   position: fixed;
   top: 20px;
