@@ -76,6 +76,8 @@ const PUMPKIN_MODEL_Y_OFFSET = 2.2159;
 let pCnt = 0;
 let totalP = 0;
 let targetPos;
+let playerWorldPos = null;
+let playerYaw = 0;
 let dead = true;
 let lifeCnt = 3;
 let highScore;
@@ -337,6 +339,8 @@ AFRAME.registerComponent('player', {
     this.turboGhostEl = null;
     this.hitGhosts = [];
     this.ghosts = document.querySelectorAll('[ghost]');
+    const personalities = ['chaser', 'predictor', 'flanker', 'roamer'];
+    this.ghosts.forEach((g, i) => { g.personality = personalities[i % personalities.length]; });
     this.player = document.querySelector('[player]');
     this.currentBg = siren;
     this.nextBg = siren;
@@ -350,6 +354,7 @@ AFRAME.registerComponent('player', {
       let x = position.x;
       let y = position.y;
       let z = position.z;
+      playerWorldPos = new THREE.Vector3(x, y, z);
 
       this.updatePlayerDest(x, y, z);
       this.onCollideWithPellets(x, z);
@@ -377,6 +382,7 @@ AFRAME.registerComponent('player', {
     let camera = document.querySelector("a-camera");
     const lookControls = camera.components['look-controls'];
     const yaw = lookControls && lookControls.yawObject ? lookControls.yawObject.rotation.y : 0;
+    playerYaw = yaw;
 
     let _z = step * Math.cos(yaw);
     let _x = step * Math.sin(yaw);
@@ -748,12 +754,61 @@ AFRAME.registerComponent('ghost', {
         speed: gNormSpeed
       });
     }
-    let p = Math.floor(Math.random() * intersections.length);
-    let x = startX + intersections[p][0] * step; 
-    let z = startZ + intersections[p][1] * step; 
-    updateAgentDest(el, targetPos? targetPos: new THREE.Vector3(x, 0, z));
+    updateAgentDest(el, computeGhostTarget(el));
   }
 }); 
+
+// Personality-based ghost targeting
+function randomIntersection() {
+  const p = Math.floor(Math.random() * intersections.length);
+  return new THREE.Vector3(startX + intersections[p][0] * step, 0, startZ + intersections[p][1] * step);
+}
+
+function computeGhostTarget(ghost) {
+  // Scatter mode or no player data yet — roam randomly
+  if (!targetPos || !playerWorldPos) return randomIntersection();
+
+  switch (ghost.personality) {
+    case 'chaser':
+      // Direct pursuit: always go exactly where the player is
+      return playerWorldPos.clone();
+
+    case 'predictor': {
+      // Dead reckoning: predict where the player will be in 5 steps
+      // by projecting along their current camera facing direction
+      const lookAhead = 5 * step;
+      return new THREE.Vector3(
+        playerWorldPos.x + Math.sin(playerYaw) * lookAhead,
+        0,
+        playerWorldPos.z + Math.cos(playerYaw) * lookAhead
+      );
+    }
+
+    case 'flanker': {
+      // Flanking: target behind the player to cut off retreat
+      const flankDist = 4 * step;
+      return new THREE.Vector3(
+        playerWorldPos.x - Math.sin(playerYaw) * flankDist,
+        0,
+        playerWorldPos.z - Math.cos(playerYaw) * flankDist
+      );
+    }
+
+    case 'roamer': {
+      // Pressure AI: chase from a distance, back off when close
+      // Forces the player into the other ghosts rather than direct pursuit
+      const gPos = ghost.object3D.position;
+      const dx = gPos.x - playerWorldPos.x;
+      const dz = gPos.z - playerWorldPos.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist < 2.5) return randomIntersection();
+      return playerWorldPos.clone();
+    }
+
+    default:
+      return playerWorldPos.clone();
+  }
+}
 
 function setOpacity(object, opacity) {
   const mesh = object.getObject3D('mesh');
