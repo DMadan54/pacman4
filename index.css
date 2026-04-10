@@ -115,6 +115,19 @@ body {
   display: none;
 }
 
+#high-level-display {
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  font-size: 0.7em;
+  color: gold;
+  font-family: 'PressStart2P';
+  background: rgba(0,0,0,0.6);
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: none;
+}
+
 #event-countdown {
   position: fixed;
   top: 20px;

@@ -81,6 +81,7 @@ let playerYaw = 0;
 let dead = true;
 let lifeCnt = 3;
 let highScore;
+let highLevel;
 let score = 0;
 let level = 1;
 let pillCnt = 0;
@@ -123,10 +124,13 @@ AFRAME.registerComponent('maze', {
 
       // Cached high score
       let hs = localStorage.getItem('highscore');
-      highScore = hs? parseInt(hs): 0;
-      document.querySelector('#highscore').setAttribute('text', {
-        'value': highScore
-      });
+      highScore = hs ? parseInt(hs) : 0;
+      document.querySelector('#highscore').setAttribute('text', {value: highScore});
+
+      // Cached high level
+      let hl = localStorage.getItem('highlevel');
+      highLevel = hl ? parseInt(hl) : 1;
+      document.getElementById('high-level-display').innerHTML = 'BEST: LVL ' + highLevel;
     });
   },
   initLife: function () {
@@ -316,6 +320,7 @@ AFRAME.registerComponent('maze', {
     document.getElementById("gameover").style.display = 'none';
     document.getElementById("ready").style.display = 'block';
     document.getElementById("level-display").style.display = 'block';
+    document.getElementById("high-level-display").style.display = 'block';
 
     score = 0;
     level = 1;
@@ -468,6 +473,7 @@ AFRAME.registerComponent('player', {
       gameoverEl.classList.remove("blink");
     gameoverEl.style.display = 'block';
     document.getElementById("level-display").style.display = 'none';
+    document.getElementById("high-level-display").style.display = 'none';
 
     let startEl = document.getElementById("start");
     startEl.innerHTML = 'RESTART';
@@ -582,6 +588,11 @@ AFRAME.registerComponent('player', {
     this.stop();
     const savedScore = score;
     level++;
+    if (level > highLevel) {
+      highLevel = level;
+      localStorage.setItem('highlevel', highLevel);
+      document.getElementById('high-level-display').innerHTML = 'BEST: LVL ' + highLevel;
+    }
     playCutscene(() => {
       document.querySelector('[maze]').components.maze.start();
       score = savedScore;
