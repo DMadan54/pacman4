@@ -799,12 +799,14 @@ function playCutscene(onComplete) {
     video.pause();
     video.currentTime = 0;
     video.removeEventListener('ended', done);
-    skip.removeEventListener('click', done);
+    overlay.removeEventListener('click', done);
+    document.removeEventListener('keydown', done);
     onComplete();
   };
 
   video.addEventListener('ended', done);
-  skip.addEventListener('click', done);
+  overlay.addEventListener('click', done);
+  document.addEventListener('keydown', done);
 }
 
 // Classic Pac-Man ghost AI — each ghost has a distinct targeting personality
