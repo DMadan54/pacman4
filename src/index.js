@@ -105,7 +105,7 @@ const ready = new Howl({
 });
 
 const eating = new Howl({src: 'assets/sounds/eating.mp3'});
-const eatPill = new Howl({src: 'assets/sounds/eat-pill.mp3'});
+const eatPill = new Howl({src: 'assets/sounds/eatpill2.wav'});
 const eatGhost = new Howl({src: 'assets/sounds/eat-ghost.mp3'});
 const die = new Howl({src: 'assets/sounds/die.mp3'});
 
