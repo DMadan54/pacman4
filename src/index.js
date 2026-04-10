@@ -305,8 +305,14 @@ AFRAME.registerComponent('maze', {
     const allPellets = document.querySelectorAll('[pellet]');
     allPellets.forEach(p => p.setAttribute('visible', true));
     pCnt = totalP;
-    // TESTING: leave only one pellet
-    allPellets.forEach((p, i) => { if (i > 0) p.setAttribute('visible', false); });
+    // TESTING: leave only the pellet closest to player spawn
+    let closest = null, closestDist = Infinity;
+    allPellets.forEach(p => {
+      const pos = p.getAttribute('position');
+      const d = Math.sqrt(pos.x * pos.x + (pos.z - 4) * (pos.z - 4));
+      if (d < closestDist) { closestDist = d; closest = p; }
+    });
+    allPellets.forEach(p => { if (p !== closest) p.setAttribute('visible', false); });
     pCnt = 1;
     cherryEls.forEach(c => c.setAttribute('visible', true));
     halloweenPumpkinEls.forEach(p => p.setAttribute('visible', true));
@@ -582,9 +588,8 @@ AFRAME.registerComponent('player', {
   onWin: function () {
     this.stop();
     const savedScore = score;
-    const mazeComp = this;
     playCutscene(() => {
-      mazeComp.start();
+      document.querySelector('[maze]').components.maze.start();
       // Preserve score across levels
       score = savedScore;
       document.querySelector('#score').setAttribute('text', {value: score});
